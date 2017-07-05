@@ -1,0 +1,14 @@
+---
+# Gitlab General Config.
+gitlab_external_url: http://gitlab.localdomain/
+
+# Email configuration.
+gitlab_email_enabled: "false"
+gitlab_email_from: "gitlab@example.com"
+gitlab_email_display_name: "Gitlab"
+gitlab_email_reply_to: "gitlab@example.com"
+
+# Gitlab Runner Registration to gitlab coodinator
+gitlab_runner_registration_enabled: "true"
+gitlab_runner_registration_token: 'GITLAB_TOKEN'
+gitlab_runner_coordinator_url: '{{ gitlab_external_url }}/ci'

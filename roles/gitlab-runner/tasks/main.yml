@@ -1,0 +1,71 @@
+---
+- name: resolve platform specific vars
+  include_vars: "{{item}}"
+  with_first_found:
+    - "{{ansible_distribution}}-{{ansible_distribution_release}}.yml"
+    - "{{ansible_distribution}}.yml"
+    - "{{ansible_os_family}}.yml"
+
+- name: get bootstrapping script...
+  become: yes
+  become_user: root
+  get_url:
+    url: '{{gitlab_ci_multi_runner_url}}'
+    dest: /tmp/gitlab_ci_multi.sh
+    mode: 0755
+
+- name: running bootstrap script
+  become: yes
+  become_user: root
+  command: /tmp/gitlab_ci_multi.sh
+  args:
+    creates: /usr/bin/gitlab-ci-multi-runner
+
+- name: install gitlab-ci-multi-runner
+  become: yes
+  become_user: root
+  package:
+    name: gitlab-ci-multi-runner
+    state: present
+
+- name: add the gitlab-runner user to the docker group
+  become: yes
+  become_user: root
+  user:
+    name: gitlab-runner
+    append: yes
+    groups: docker
+
+- name: mkdir /etc/gitlab-runner and /etc/sysconfig
+  become: yes
+  become_user: root
+  with_items:
+    - d: /etc/gitlab-runner
+      m: '0600'
+    - d: /etc/sysconfig
+      m: '0755'
+  file:
+    state: directory
+    path: '{{item.d}}'
+    mode: '{{item.m}}'
+
+- name: install sysconfig/gitlab-runner
+  become: yes
+  become_user: root
+  with_items:
+    - d: /etc/sysconfig
+      f: gitlab-runner
+      m: '0644'
+    - d: /etc/gitlab-runner
+      f: config.toml
+      m: '0600'
+  template:
+    src: '{{item.f}}.j2'
+    dest: '{{item.d}}/{{item.f}}'
+    mode: '{{item.m}}'
+
+- include: systemd.yml
+
+- name: Register GitLab Runner
+  include: register-runner.yml
+  when: gitlab_runner_registration_token != '' and gitlab_runner_registration_enabled

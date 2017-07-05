@@ -1,0 +1,22 @@
+---
+# Ansible playbook for a GitLab server.
+
+- hosts: gitlab
+  gather_facts: yes
+  roles:
+    #- firewall
+    - gitlab
+
+- hosts: runners
+  become: yes
+  gather_facts: yes
+  pre_tasks:
+    - name: Update apt cache.
+      apt: update_cache=yes cache_valid_time=600
+      when: ansible_os_family == 'Debian'
+
+    - name: Install test dependencies.
+      package: name=curl state=present
+  roles:
+    - docker
+    - gitlab-runner
